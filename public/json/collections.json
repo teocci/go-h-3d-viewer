@@ -1,0 +1,908 @@
+[
+  {
+    "name": "System A",
+    "uuid": "a1b2c3d4-e5f6-7a89-b0c1-d2e3f4a5b6c7",
+    "gis": {
+      "points": [
+        {
+          "id": "pA1",
+          "coordinates": [
+            10,
+            10,
+            0
+          ]
+        },
+        {
+          "id": "pA2",
+          "coordinates": [
+            30,
+            10,
+            0
+          ]
+        },
+        {
+          "id": "pA3",
+          "coordinates": [
+            30,
+            30,
+            0
+          ]
+        },
+        {
+          "id": "pA4",
+          "coordinates": [
+            10,
+            30,
+            0
+          ]
+        },
+        {
+          "id": "pA5",
+          "coordinates": [
+            20,
+            20,
+            0
+          ]
+        },
+        {
+          "id": "pA6",
+          "coordinates": [
+            15,
+            10,
+            0
+          ]
+        },
+        {
+          "id": "pA7",
+          "coordinates": [
+            25,
+            10,
+            0
+          ]
+        },
+        {
+          "id": "pA8",
+          "coordinates": [
+            25,
+            20,
+            0
+          ]
+        },
+        {
+          "id": "pA9",
+          "coordinates": [
+            15,
+            20,
+            0
+          ]
+        },
+        {
+          "id": "pA10",
+          "coordinates": [
+            20,
+            25,
+            0
+          ]
+        }
+      ],
+      "lines": [
+        {
+          "id": "lA1",
+          "start": "pA1",
+          "end": "pA6"
+        },
+        {
+          "id": "lA2",
+          "start": "pA6",
+          "end": "pA2"
+        },
+        {
+          "id": "lA3",
+          "start": "pA2",
+          "end": "pA7"
+        },
+        {
+          "id": "lA4",
+          "start": "pA7",
+          "end": "pA3"
+        },
+        {
+          "id": "lA5",
+          "start": "pA3",
+          "end": "pA8"
+        },
+        {
+          "id": "lA6",
+          "start": "pA8",
+          "end": "pA5"
+        },
+        {
+          "id": "lA7",
+          "start": "pA5",
+          "end": "pA9"
+        },
+        {
+          "id": "lA8",
+          "start": "pA9",
+          "end": "pA4"
+        },
+        {
+          "id": "lA9",
+          "start": "pA4",
+          "end": "pA10"
+        },
+        {
+          "id": "lA10",
+          "start": "pA10",
+          "end": "pA3"
+        },
+        {
+          "id": "lA11",
+          "start": "pA2",
+          "end": "pA5"
+        },
+        {
+          "id": "lA12",
+          "start": "pA1",
+          "end": "pA4"
+        },
+        {
+          "id": "lA13",
+          "start": "pA6",
+          "end": "pA7"
+        }
+      ],
+      "polylines": [
+        {
+          "id": "plA1",
+          "nodes": [
+            "pA1",
+            "pA2",
+            "pA3",
+            "pA5",
+            "pA4"
+          ]
+        }
+      ],
+      "polygons": [
+        {
+          "id": "staA1",
+          "vertices": [
+            [
+              5,
+              5,
+              0
+            ],
+            [
+              15,
+              5,
+              0
+            ],
+            [
+              15,
+              15,
+              0
+            ],
+            [
+              5,
+              15,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "staA2",
+          "vertices": [
+            [
+              25,
+              5,
+              0
+            ],
+            [
+              35,
+              5,
+              0
+            ],
+            [
+              35,
+              15,
+              0
+            ],
+            [
+              25,
+              15,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "staA3",
+          "vertices": [
+            [
+              25,
+              25,
+              0
+            ],
+            [
+              35,
+              25,
+              0
+            ],
+            [
+              35,
+              35,
+              0
+            ],
+            [
+              25,
+              35,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "staA4",
+          "vertices": [
+            [
+              5,
+              25,
+              0
+            ],
+            [
+              15,
+              25,
+              0
+            ],
+            [
+              15,
+              35,
+              0
+            ],
+            [
+              5,
+              35,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "staA5",
+          "vertices": [
+            [
+              15,
+              15,
+              0
+            ],
+            [
+              25,
+              15,
+              0
+            ],
+            [
+              25,
+              25,
+              0
+            ],
+            [
+              15,
+              25,
+              0
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "System B",
+    "uuid": "b1c2d3e4-f5a6-7b89-c0d1-e2f3a4b5c6d7",
+    "gis": {
+      "points": [
+        {
+          "id": "pB1",
+          "coordinates": [
+            10,
+            10,
+            0
+          ]
+        },
+        {
+          "id": "pB2",
+          "coordinates": [
+            30,
+            10,
+            0
+          ]
+        },
+        {
+          "id": "pB3",
+          "coordinates": [
+            20,
+            30,
+            0
+          ]
+        },
+        {
+          "id": "pB4",
+          "coordinates": [
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "id": "pB5",
+          "coordinates": [
+            25,
+            10,
+            0
+          ]
+        },
+        {
+          "id": "pB6",
+          "coordinates": [
+            30,
+            20,
+            0
+          ]
+        },
+        {
+          "id": "pB7",
+          "coordinates": [
+            20,
+            20,
+            0
+          ]
+        },
+        {
+          "id": "pB8",
+          "coordinates": [
+            15,
+            20,
+            0
+          ]
+        },
+        {
+          "id": "pB9",
+          "coordinates": [
+            10,
+            20,
+            0
+          ]
+        }
+      ],
+      "lines": [
+        {
+          "id": "lB1",
+          "start": "pB1",
+          "end": "pB4"
+        },
+        {
+          "id": "lB2",
+          "start": "pB4",
+          "end": "pB2"
+        },
+        {
+          "id": "lB3",
+          "start": "pB2",
+          "end": "pB6"
+        },
+        {
+          "id": "lB4",
+          "start": "pB6",
+          "end": "pB3"
+        },
+        {
+          "id": "lB5",
+          "start": "pB3",
+          "end": "pB7"
+        },
+        {
+          "id": "lB6",
+          "start": "pB7",
+          "end": "pB1"
+        },
+        {
+          "id": "lB7",
+          "start": "pB1",
+          "end": "pB8"
+        },
+        {
+          "id": "lB8",
+          "start": "pB8",
+          "end": "pB7"
+        },
+        {
+          "id": "lB9",
+          "start": "pB2",
+          "end": "pB5"
+        },
+        {
+          "id": "lB10",
+          "start": "pB5",
+          "end": "pB6"
+        },
+        {
+          "id": "lB11",
+          "start": "pB4",
+          "end": "pB7"
+        },
+        {
+          "id": "lB12",
+          "start": "pB8",
+          "end": "pB9"
+        },
+        {
+          "id": "lB13",
+          "start": "pB9",
+          "end": "pB1"
+        },
+        {
+          "id": "lB14",
+          "start": "pB2",
+          "end": "pB7"
+        },
+        {
+          "id": "lB15",
+          "start": "pB3",
+          "end": "pB8"
+        },
+        {
+          "id": "lB16",
+          "start": "pB6",
+          "end": "pB7"
+        },
+        {
+          "id": "lB17",
+          "start": "pB5",
+          "end": "pB4"
+        }
+      ],
+      "polylines": [
+        {
+          "id": "plB1",
+          "nodes": [
+            "pB1",
+            "pB2",
+            "pB3"
+          ]
+        }
+      ],
+      "polygons": [
+        {
+          "id": "staB1",
+          "vertices": [
+            [
+              5,
+              5,
+              0
+            ],
+            [
+              15,
+              5,
+              0
+            ],
+            [
+              15,
+              15,
+              0
+            ],
+            [
+              5,
+              15,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "staB2",
+          "vertices": [
+            [
+              25,
+              5,
+              0
+            ],
+            [
+              35,
+              5,
+              0
+            ],
+            [
+              35,
+              15,
+              0
+            ],
+            [
+              25,
+              15,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "staB3",
+          "vertices": [
+            [
+              15,
+              25,
+              0
+            ],
+            [
+              25,
+              25,
+              0
+            ],
+            [
+              25,
+              35,
+              0
+            ],
+            [
+              15,
+              35,
+              0
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "System C",
+    "uuid": "c1d2e3f4-a5b6-7c89-d0e1-f2a3b4c5d6e7",
+    "gis": {
+      "points": [
+        {
+          "id": "pC1",
+          "coordinates": [
+            5,
+            5,
+            0
+          ]
+        },
+        {
+          "id": "pC2",
+          "coordinates": [
+            15,
+            5,
+            0
+          ]
+        },
+        {
+          "id": "pC3",
+          "coordinates": [
+            25,
+            5,
+            0
+          ]
+        },
+        {
+          "id": "pC4",
+          "coordinates": [
+            25,
+            15,
+            0
+          ]
+        },
+        {
+          "id": "pC5",
+          "coordinates": [
+            15,
+            15,
+            0
+          ]
+        },
+        {
+          "id": "pC6",
+          "coordinates": [
+            5,
+            15,
+            0
+          ]
+        },
+        {
+          "id": "pC7",
+          "coordinates": [
+            15,
+            25,
+            0
+          ]
+        },
+        {
+          "id": "pC8",
+          "coordinates": [
+            10,
+            10,
+            0
+          ]
+        },
+        {
+          "id": "pC9",
+          "coordinates": [
+            20,
+            10,
+            0
+          ]
+        },
+        {
+          "id": "pC10",
+          "coordinates": [
+            20,
+            20,
+            0
+          ]
+        },
+        {
+          "id": "pC11",
+          "coordinates": [
+            10,
+            20,
+            0
+          ]
+        },
+        {
+          "id": "pC12",
+          "coordinates": [
+            15,
+            10,
+            0
+          ]
+        }
+      ],
+      "lines": [
+        {
+          "id": "lC1",
+          "start": "pC1",
+          "end": "pC8"
+        },
+        {
+          "id": "lC2",
+          "start": "pC8",
+          "end": "pC2"
+        },
+        {
+          "id": "lC3",
+          "start": "pC2",
+          "end": "pC12"
+        },
+        {
+          "id": "lC4",
+          "start": "pC12",
+          "end": "pC3"
+        },
+        {
+          "id": "lC5",
+          "start": "pC3",
+          "end": "pC9"
+        },
+        {
+          "id": "lC6",
+          "start": "pC9",
+          "end": "pC5"
+        },
+        {
+          "id": "lC7",
+          "start": "pC5",
+          "end": "pC10"
+        },
+        {
+          "id": "lC8",
+          "start": "pC10",
+          "end": "pC4"
+        },
+        {
+          "id": "lC9",
+          "start": "pC4",
+          "end": "pC7"
+        },
+        {
+          "id": "lC10",
+          "start": "pC7",
+          "end": "pC11"
+        },
+        {
+          "id": "lC11",
+          "start": "pC11",
+          "end": "pC6"
+        },
+        {
+          "id": "lC12",
+          "start": "pC6",
+          "end": "pC1"
+        }
+      ],
+      "polylines": [
+        {
+          "id": "plC1",
+          "nodes": [
+            "pC1",
+            "pC2",
+            "pC3",
+            "pC4",
+            "pC7",
+            "pC5",
+            "pC6",
+            "pC1"
+          ]
+        }
+      ],
+      "polygons": [
+        {
+          "id": "staC1",
+          "vertices": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              10,
+              10,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "staC2",
+          "vertices": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              20,
+              0,
+              0
+            ],
+            [
+              20,
+              10,
+              0
+            ],
+            [
+              10,
+              10,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "staC3",
+          "vertices": [
+            [
+              20,
+              0,
+              0
+            ],
+            [
+              30,
+              0,
+              0
+            ],
+            [
+              30,
+              10,
+              0
+            ],
+            [
+              20,
+              10,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "staC4",
+          "vertices": [
+            [
+              20,
+              10,
+              0
+            ],
+            [
+              30,
+              10,
+              0
+            ],
+            [
+              30,
+              20,
+              0
+            ],
+            [
+              20,
+              20,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "staC5",
+          "vertices": [
+            [
+              10,
+              10,
+              0
+            ],
+            [
+              20,
+              10,
+              0
+            ],
+            [
+              20,
+              20,
+              0
+            ],
+            [
+              10,
+              20,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "staC6",
+          "vertices": [
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              10,
+              10,
+              0
+            ],
+            [
+              10,
+              20,
+              0
+            ],
+            [
+              0,
+              20,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "staC7",
+          "vertices": [
+            [
+              10,
+              20,
+              0
+            ],
+            [
+              20,
+              20,
+              0
+            ],
+            [
+              20,
+              30,
+              0
+            ],
+            [
+              10,
+              30,
+              0
+            ]
+          ]
+        }
+      ]
+    }
+  }
+]

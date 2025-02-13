@@ -1,0 +1,29 @@
+/**
+ * Created by RTT.
+ * Author: teocci@yandex.com on 2022-8월-24
+ */
+
+:root {
+    --white: hsl(0, 0%, 100%);
+    --white-a80: hsla(0, 0%, 100%, .8);
+
+    --light-gray: hsl(0, 0%, 96%);
+    --light-gray-l87: hsl(0, 0%, 87%);
+    --light-gray-l80: hsl(0, 0%, 80%);
+    --gray: hsl(0, 0%, 50%);
+
+    --background-main: hsl(0, 0%, 65%);
+    --background-dark: hsl(0, 0%, 30%);
+
+    --background-contrast: hsl(216, 98%, 52%);
+    --background-contrast-dark: hsl(216, 98%, 42%);
+    --background-contrast-darker: hsl(216, 98%, 32%);
+    --background-contrast-darkest: hsl(216, 98%, 22%);
+    --background-contrast-light: hsl(216, 98%, 62%);
+    --background-contrast-lighter: hsl(216, 98%, 72%);
+    --background-contrast-lightest: hsl(216, 98%, 82%);
+
+    --text-color-main: hsl(0, 0%, 0%);
+    --text-color-light: hsl(0, 0%, 50%);
+    --text-color-lighter: hsl(0, 0%, 70%);
+}

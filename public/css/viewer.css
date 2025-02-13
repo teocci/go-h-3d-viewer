@@ -1,0 +1,24 @@
+/**
+ * Created by RTT.
+ * Author: teocci@yandex.com on 2025-2월-11
+ */
+
+@import 'components/toc/base.css';
+
+main {
+    display: flex;
+    flex-flow: row wrap;
+    width: 100vw;
+    height: 100vh;
+}
+
+#collections {
+    display: flex;
+    flex-flow: row wrap;
+    width: 20vw;
+    background-color: var(--background-dark);
+}
+
+#viewer {
+    width: 80vw;
+}
