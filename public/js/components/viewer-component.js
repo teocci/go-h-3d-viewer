@@ -9,6 +9,22 @@ import * as THREE from 'three'
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js'
 import GISSceneBuilder from './gis-scene-builder.js'
 
+/**
+ * Represents the result of an intersection test performed by Raycaster.intersectObject.
+ *
+ * @typedef {Object} ThreeIntersection
+ * @property {number} distance - The distance between the origin of the ray and the intersection point.
+ * @property {THREE.Vector3} point - The point of intersection in world coordinates.
+ * @property {THREE.Face3 | null} face - The intersected face (only available for geometry-based objects).
+ * @property {number} faceIndex - The index of the intersected face.
+ * @property {THREE.Object3D} object - The intersected object.
+ * @property {THREE.Vector2 | undefined} uv - The U,V coordinates at the point of intersection (if applicable).
+ * @property {THREE.Vector2 | undefined} uv1 - The second set of U,V coordinates at the point of intersection (if applicable).
+ * @property {THREE.Vector3} normal - The interpolated normal vector at the intersection point.
+ * @property {number | undefined} instanceId - The index number of the instance where the ray intersects an InstancedMesh (if applicable).
+ */
+
+
 const BACKGROUND_COLOR = 0xd6d6d6
 const WHITE_LIGHT_COLOR = 0xffffff
 
@@ -163,109 +179,176 @@ export default class ViewerComponent {
         this.renderer.setSize(window.innerWidth, window.innerHeight)
     }
 
+    /**
+     * Updates the mouse position based on the event.
+     * @param {MouseEvent} event - The mouse event.
+     */
     onMouseMove(event) {
-        const rect = this.renderer.domElement.getBoundingClientRect()
-        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
-        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
+        this.updateMousePosition(event)
+        this.updateTooltipPosition(event)
 
-        // Update tooltip position
-        this.$tooltip.style.left = `${event.clientX + 15}px`
-        this.$tooltip.style.top = `${event.clientY + 15}px`
-
-        // Update raycaster and check for intersections
-        this.raycaster.setFromCamera(this.mouse, this.camera)
-        const intersects = this.raycaster.intersectObjects(this.scene.children, true)
-
-        // Handle hover effects
-        if (intersects.length > 0) {
-            const object = this.findParentWithId(intersects[0].object)
-            if (object && object.userData.id) {
-                if (this.hoveredObject !== object) {
-                    if (this.hoveredObject && !this.isSelected(this.hoveredObject)) {
-                        this.resetMaterial(this.hoveredObject)
-                    }
-                    this.hoveredObject = object
-                    if (!this.isSelected(object)) {
-                        this.highlightObject(object, 0.4) // Less intense highlight for hover
-                    }
-                }
-                this.showTooltip(object.userData.id)
-            } else {
-                this.hideTooltip()
-                if (this.hoveredObject && !this.isSelected(this.hoveredObject)) {
-                    this.resetMaterial(this.hoveredObject)
-                }
-                this.hoveredObject = null
-            }
-        } else {
-            this.hideTooltip()
-            if (this.hoveredObject && !this.isSelected(this.hoveredObject)) {
-                this.resetMaterial(this.hoveredObject)
-            }
-            this.hoveredObject = null
-        }
+        const intersects = this.raycasterIntersections
+        this.handleHover(intersects)
     }
 
     onMouseClick(event) {
-        const rect = this.renderer.domElement.getBoundingClientRect()
-        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
-        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
+        this.updateMousePosition(event)
 
-        // Update raycaster and check for intersections
-        this.raycaster.setFromCamera(this.mouse, this.camera)
-        const intersects = this.raycaster.intersectObjects(this.scene.children, true)
+        const intersects = this.raycasterIntersections
 
-        if (intersects.length > 0) {
-            const object = this.findParentWithId(intersects[0].object)
-            if (object && object.userData.id) {
-                if (this.selectedObject === object) {
-                    // Deselect if clicking the same object
-                    this.resetMaterial(object)
-                    this.selectedObject = null
-                } else {
-                    if (this.selectedObject) {
-                        this.resetMaterial(this.selectedObject)
-                    }
-                    this.selectedObject = object
-                    this.highlightObject(object, 0.8) // More intense highlight for selection
-                }
+        this.handleSelection(intersects)
+    }
+
+    /**
+     * Handles hover effects for objects in the scene.
+     * @param {ThreeIntersection[]} intersects - The objects intersected by the raycaster.
+     */
+    handleHover(intersects) {
+        if (intersects.length === 0) {
+            this.clearHover()
+            return
+        }
+
+        const object = this.findParentWithId(intersects[0].object)
+        if (!object || !object.userData.id) {
+            this.clearHover()
+            return
+        }
+
+        if (this.hoveredObject !== object) {
+            if (this.hoveredObject && !this.isSelected(this.hoveredObject)) {
+                this.resetMaterial(this.hoveredObject)
             }
-        } else if (this.selectedObject) {
-            // Deselect when clicking empty space
-            this.resetMaterial(this.selectedObject)
-            this.selectedObject = null
+            this.hoveredObject = object
+            if (!this.isSelected(object)) {
+                this.highlightObject(object, 0.4)
+            }
+        }
+        this.showTooltip(object.userData.id)
+    }
+
+    /**
+     * Clears the hover effect and hides the tooltip.
+     */
+    clearHover() {
+        this.hideTooltip()
+        if (this.hoveredObject && !this.isSelected(this.hoveredObject)) {
+            this.resetMaterial(this.hoveredObject)
+        }
+        this.hoveredObject = null
+    }
+
+    /**
+     * Handles object selection in the scene.
+     * @param {ThreeIntersection[]} intersects - The objects intersected by the raycaster.
+     */
+    handleSelection(intersects) {
+        if (intersects.length === 0) {
+            if (this.selectedObject) {
+                this.clearSelection(this.selectedObject)
+            }
+
+            return
+        }
+
+        const object = this.findParentWithId(intersects[0].object)
+        if (!object || !object.userData.id) return
+
+        if (this.selectedObject === object) {
+            this.clearSelection(object)
+        } else {
+            if (this.selectedObject) {
+                this.resetMaterial(this.selectedObject)
+            }
+            this.selectedObject = object
+            this.highlightObject(object, 0.8)
         }
     }
 
     /**
+     * Clears the selection of an object.
+     * @param {THREE.Object3D} object - The object to clear the selection of.
+     */
+    clearSelection(object) {
+        this.resetMaterial(object)
+        this.selectedObject = null
+    }
+
+    /**
+     * Updates the mouse position based on the event.
+     * @param {MouseEvent} event - The mouse event.
+     */
+    updateMousePosition(event) {
+        const rect = this.renderer.domElement.getBoundingClientRect()
+        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
+        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
+    }
+
+    /**
+     * Updates the position of the tooltip based on the event.
+     * @param {MouseEvent} event - The mouse event.
+     */
+    updateTooltipPosition(event) {
+        this.$tooltip.style.left = `${event.clientX + 15}px`
+        this.$tooltip.style.top = `${event.clientY + 15}px`
+    }
+
+    /**
+     * Returns the intersections of the raycaster with objects in the scene.
+     * @return {ThreeIntersection[]} - The objects intersected by the raycaster.
+     */
+    get raycasterIntersections() {
+        this.raycaster.setFromCamera(this.mouse, this.camera)
+        return this.raycaster.intersectObjects(this.scene.children, true)
+    }
+
+    /**
      * Finds the parent object with an ID in the hierarchy.
-     * @param {OBJElement} object - The object to search from.
-     * @param {OBJElement} object.parent - The parent object to check.
-     * @param {Object} object.userData - The user data object containing an ID.
-     * @return {OBJElement | null} - The parent object with an ID or null if not found.
+     * @param {THREE.Object3D} object - The object to search from.
+     * @return {THREE.Object3D|null} - The parent object with an ID or null if not found.
      */
     findParentWithId(object) {
         let current = object
         while (current) {
             if (current.userData && current.userData.id) return current
+
             current = current.parent
         }
 
         return null
     }
 
+    /**
+     * Checks if an object is selected.
+     * @param {THREE.Object3D} object - The object to check.
+     * @return {boolean} - True if the object is selected, false otherwise.
+     */
     isSelected(object) {
         return this.selectedObject === object
     }
 
+    /**
+     * Highlights a collection of objects in the scene.
+     * @param {string} uuid - The UUID of the collection to highlight.
+     */
     highlightCollection(uuid) {
         this.gisBuilder.highlightCollection(uuid)
     }
 
+    /**
+     * Unhighlights a collection of objects in the scene.
+     * @param uuid - The UUID of the collection to unhighlight.
+     */
     unhighlightCollection(uuid) {
         this.gisBuilder.unhighlightCollection(uuid)
     }
 
+    /**
+     * Highlights a single object in the scene.
+     * @param {THREE.Object3D} object - The object to highlight.
+     * @param {THREE.MeshStandardMaterial} object.material - The material of the object.
+     * @param {number} intensity - The intensity of the highlight.
+     */
     highlightObject(object, intensity) {
         if (object.material) {
             console.log({object})
@@ -278,27 +361,54 @@ export default class ViewerComponent {
         }
     }
 
-    material(mode, type) {
-        return this.gisBuilder.materials[mode][type]
-    }
-
-    highlightedMaterial(type) {
-        return this.gisBuilder.materials.highlighted[type]
-    }
-
-    criticalMaterial(type) {
-        return this.gisBuilder.materials.critical[type]
-    }
-
-    defaultMaterial(type) {
-        return this.gisBuilder.materials.default[type]
-    }
-
+    /**
+     * Resets the material of an object to its original state.
+     * @param {THREE.Object3D} object - The object to reset the material of.
+     * @param {THREE.MeshStandardMaterial} object.userData.originalMaterial - The original material of the object.
+     * @param {THREE.MeshStandardMaterial} object.material - The current material of the object.
+     */
     resetMaterial(object) {
         if (object.material && object.userData.originalMaterial) {
             object.material = object.userData.originalMaterial
             delete object.userData.originalMaterial
         }
+    }
+
+    /**
+     * Returns the material for the specified mode and type.
+     * @param {string} mode - The mode of the material (default, highlighted, critical)
+     * @param {string} type - The type of the material (point, line, polyline, polygon)
+     * @return {THREE.MeshStandardMaterial} - The material for the specified mode and type.
+     */
+    material(mode, type) {
+        return this.gisBuilder.materials[mode][type]
+    }
+
+    /**
+     * Returns the highlighted material for the specified type.
+     * @param {string} type - The type of the material (point, line, polyline, polygon)
+     * @return {THREE.MeshStandardMaterial} - The highlighted material for the specified type.
+     */
+    highlightedMaterial(type) {
+        return this.gisBuilder.materials.highlighted[type]
+    }
+
+    /**
+     * Returns the critical material for the specified type.
+     * @param {string} type - The type of the material (point, line, polyline, polygon)
+     * @return {THREE.MeshStandardMaterial} - The highlighted material for the specified type.
+     */
+    criticalMaterial(type) {
+        return this.gisBuilder.materials.critical[type]
+    }
+
+    /**
+     * Returns the default material for the specified type.
+     * @param {string} type - The type of the material (point, line, polyline, polygon)
+     * @return {THREE.MeshStandardMaterial} - The highlighted material for the specified type.
+     */
+    defaultMaterial(type) {
+        return this.gisBuilder.materials.default[type]
     }
 
     /**
@@ -382,6 +492,10 @@ export default class ViewerComponent {
         this.controls.update()
     }
 
+    /**
+     * Shows a tooltip with the provided text at the current mouse position.
+     * @param {string} text - The text to display in the tooltip.
+     */
     showTooltip(text) {
         this.$tooltip.textContent = `ID: ${text}`
         this.$tooltip.style.display = 'block'
