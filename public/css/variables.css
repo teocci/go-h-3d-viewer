@@ -26,4 +26,32 @@
     --text-color-main: hsl(0, 0%, 0%);
     --text-color-light: hsl(0, 0%, 50%);
     --text-color-lighter: hsl(0, 0%, 70%);
+
+    --ov_foreground_color: #fafafa;
+    --ov_background_color: #2a2b2e;
+    --ov_disabled_foreground_color: #888888;
+    --ov_button_color: #3393bd;
+    --ov_button_hover_color: #146a8f;
+    --ov_button_text_color: #ffffff;
+    --ov_outline_button_color: #c9e5f8;
+    --ov_outline_button_hover_color: #2f6984;
+    --ov_outline_button_text_color: #c9e5f8;
+    --ov_icon_color: #fafafa;
+    --ov_light_icon_color: #bababa;
+    --ov_selected_icon_color: #3393bd;
+    --ov_disabled_icon_color: #888888;
+    --ov_hover_color: #667c86;
+    --ov_hover_text_color: #fafafa;
+    --ov_logo_text_color: #fafafa;
+    --ov_logo_border_color: #2a2b2e;
+    --ov_toolbar_background_color: #3d3e42;
+    --ov_toolbar_selected_color: #272727;
+    --ov_toolbar_separator_color: #888888;
+    --ov_treeview_selected_color: #38393d;
+    --ov_dialog_foreground_color: #fafafa;
+    --ov_dialog_background_color: #3c3c40;
+    --ov_dialog_control_border_color: #e1e1e1;
+    --ov_border_color: #444444;
+    --ov_shadow: 0px 0px 10px #222222;
+    --ov_only_on_model_display: inherit;
 }

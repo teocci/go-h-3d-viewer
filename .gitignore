@@ -607,3 +607,4 @@ bundles/
 ## Remove config files
 .env
 config.json
+users.json

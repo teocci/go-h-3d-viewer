@@ -52,6 +52,24 @@ export default class ViewerComponent {
         this.$element = $element ?? document.body
     }
 
+    get imageSize() {
+        const size = new THREE.Vector2()
+        this.renderer.getSize(size)
+        return {
+            width: Number.isInteger(size.x),
+            height: Number.isInteger(size.y),
+        }
+    }
+
+    /**
+     * Returns the intersections of the raycaster with objects in the scene.
+     * @return {ThreeIntersection[]} - The objects intersected by the raycaster.
+     */
+    get raycasterIntersections() {
+        this.raycaster.setFromCamera(this.mouse, this.camera)
+        return this.raycaster.intersectObjects(this.scene.children, true)
+    }
+
     /**
      * Initializes the Three.js scene, camera, renderer, controls, and lighting.
      */
@@ -265,6 +283,24 @@ export default class ViewerComponent {
         }
     }
 
+    updateCameraRatio(w, h) {
+        this.camera.aspect = w / h
+        this.camera.updateProjectionMatrix()
+    }
+
+    resizeRenderer(w, h) {
+        this.renderer.setSize(w, h)
+        this.render()
+    }
+
+    render() {
+        if (!this.renderer) throw new Error('Renderer not initialized.')
+        if (!this.scene) throw new Error('Scene not initialized.')
+        if (!this.camera) throw new Error('Camera not initialized.')
+
+        this.renderer.render(this.scene, this.camera)
+    }
+
     /**
      * Clears the selection of an object.
      * @param {THREE.Object3D} object - The object to clear the selection of.
@@ -294,17 +330,8 @@ export default class ViewerComponent {
     }
 
     /**
-     * Returns the intersections of the raycaster with objects in the scene.
-     * @return {ThreeIntersection[]} - The objects intersected by the raycaster.
-     */
-    get raycasterIntersections() {
-        this.raycaster.setFromCamera(this.mouse, this.camera)
-        return this.raycaster.intersectObjects(this.scene.children, true)
-    }
-
-    /**
      * Finds the parent object with an ID in the hierarchy.
-     * @param {THREE.Object3D} object - The object to search from.
+     * @param {THREE.Object3D|*} object - The object to search from.
      * @return {THREE.Object3D|null} - The parent object with an ID or null if not found.
      */
     findParentWithId(object) {
@@ -351,11 +378,10 @@ export default class ViewerComponent {
      */
     highlightObject(object, intensity) {
         if (object.material) {
-            console.log({object})
-
             const {materialMode, type} = object.userData
             const material = this.highlightedMaterial(type) || object.material.clone()
             material.emissiveIntensity = intensity ?? 0.5
+
             object.userData.originalMaterial = this.material(materialMode, type) || object.material
             object.material = material
         }
@@ -480,7 +506,7 @@ export default class ViewerComponent {
 
         // Set camera position relative to the center
         // Position camera at an angle that shows depth
-        const distance = radius * 1.25
+        const distance = radius / Math.sin(0.95 * this.camera.fov * Math.PI / 180)
         this.camera.position.set(
             center.x + distance,
             center.y + distance,
@@ -490,6 +516,56 @@ export default class ViewerComponent {
         this.camera.lookAt(center)
         this.controls.target.copy(center)
         this.controls.update()
+    }
+
+    fitModel() {
+        this.centerCameraOnModel()
+    }
+
+    upY() {
+        const {scene, camera} = this
+        scene.up.set(0, 1, 0)
+        camera.up.set(0, 1, 0)
+        camera.lookAt(scene.position)
+        console.log('Up vector set to Y-axis:', camera.up)
+    }
+
+    upZ() {
+        const {scene, camera} = this
+        scene.up.set(0, 0, 1)
+        camera.up.set(0, 0, 1)
+        camera.lookAt(scene.position)
+        console.log('Up vector set to Z-axis:', camera.up)
+
+    }
+
+    /**
+     * Gets the current image rendered in the canvas as a data URL
+     * @param {number} w - The desired width of the output image
+     * @param {number} h - The desired height of the output image
+     * @param {boolean} isAlpha - Whether to render with a transparent background
+     * @returns {string} The image as a data URL
+     */
+    renderImageAsDataUrl(w = 1980, h = 1020, isAlpha = false) {
+        const renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            preserveDrawingBuffer: true,
+            alpha: isAlpha,
+        })
+        renderer.setSize(w, h)
+
+        const bg = this.scene.background
+        if (isAlpha) {
+            this.scene.background = null
+        }
+
+        renderer.render(this.scene, this.camera)
+        const dataUrl = renderer.domElement.toDataURL('image/png')
+
+        this.scene.background = bg
+        renderer.dispose()
+
+        return dataUrl
     }
 
     /**

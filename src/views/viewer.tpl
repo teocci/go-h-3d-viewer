@@ -15,8 +15,14 @@
     <script type="module" src="/js/viewer.js"></script>
 {{ end }}
 {{ define "content" }}
+    <header>
+        <div id="toolbar"></div>
+    </header>
     <main>
         <div id="collections"></div>
         <div id="viewer"></div>
     </main>
+    <footer>
+        <div class="copyright"></div>
+    </footer>
 {{ end }}

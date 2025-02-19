@@ -3,7 +3,9 @@
  * Author: teocci@yandex.com on 2025-2월-11
  */
 
+@import 'f3d-icons.css';
 @import 'components/toc/base.css';
+@import 'components/toolbar/base.css';
 
 main {
     display: flex;
