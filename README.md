@@ -37,13 +37,7 @@ cd go-h-3d-viewer
 go mod download
 ```
 
-3. Install JavaScript dependencies:
-
-```bash
-npm install
-```
-
-4. Copy the sample configuration and environment files:
+3. Copy the sample configuration and environment files:
 
 ```bash
 cp config.sample.json config.json
@@ -55,14 +49,14 @@ Edit config.json and .env to match your environment settings (e.g., API endpoint
 6. Build the Go application:
 
 ```bash
-go build -o go-h-3d-viewer main.go
+go build -o viewersrv main.go
 ```
 
 ## Usage
 1. Run the application:
 
 ```bash
-./go-h-3d-viewer
+./viewersrv
 ```
 
 2. Open your web browser and navigate to http://localhost:8080 (or the port specified in your configuration).
