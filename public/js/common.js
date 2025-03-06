@@ -6,11 +6,14 @@ const REGEX_SNAKE_CASE = /[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[
 const REGEX_CAMEL_CASE = /[^a-zA-Z0-9]+(.)/g
 const REGEX_PASCAL_CASE = /\w\S*/g
 
-const isObject = o => !!o && 'object' === typeof o
-const isArray = a => !!a && a.constructor === Array
-const isMap = m => !!m && m.constructor === Map
-const isDate = d => !!d && d.constructor === Date
-const isFunction = f => !!f && 'function' === typeof f
+const isFalsy = o => !o
+const isTruthy = o => !!o
+
+const isObject = o => isTruthy(o) && 'object' === typeof o
+const isArray = a => isTruthy(a) && a.constructor === Array
+const isMap = m => isTruthy(m) && m.constructor === Map
+const isDate = d => isTruthy(d) && d.constructor === Date
+const isFunction = f => isTruthy(f) && 'function' === typeof f
 
 const isBoolean = b => 'boolean' === typeof b
 const isNumber = n => 'number' === typeof n
@@ -44,9 +47,6 @@ const isNilNumber = n => isNil(n) || !isNumeric(n)
 const isNilString = s => isNil(s) || isEmptyString(s)
 const isNilArray = a => isNil(a) || isEmptyArray(a)
 const isNilMap = m => isNil(m) || isEmptyMap(m)
-
-const isFalsy = o => !o
-const isTruthy = o => !!o
 
 const isFalse = b => b === false
 const isTrue = b => b === true

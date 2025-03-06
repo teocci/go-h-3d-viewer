@@ -10,12 +10,23 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js'
 import GISSceneBuilder from './gis-scene-builder.js'
 
 /**
+ * Represents a face in a 3D geometry.
+ *
+ * @typedef {Object} Face3
+ * @property {number} a - Index of the first vertex.
+ * @property {number} b - Index of the second vertex.
+ * @property {number} c - Index of the third vertex.
+ * @property {THREE.Vector3} normal - The normal vector of the face.
+ * @property {number} materialIndex - Index of the material used for this face.
+ */
+
+/**
  * Represents the result of an intersection test performed by Raycaster.intersectObject.
  *
  * @typedef {Object} ThreeIntersection
  * @property {number} distance - The distance between the origin of the ray and the intersection point.
  * @property {THREE.Vector3} point - The point of intersection in world coordinates.
- * @property {THREE.Face3 | null} face - The intersected face (only available for geometry-based objects).
+ * @property {Face3 | null} face - The intersected face (only available for geometry-based objects).
  * @property {number} faceIndex - The index of the intersected face.
  * @property {THREE.Object3D} object - The intersected object.
  * @property {THREE.Vector2 | undefined} uv - The U,V coordinates at the point of intersection (if applicable).
@@ -24,6 +35,8 @@ import GISSceneBuilder from './gis-scene-builder.js'
  * @property {number | undefined} instanceId - The index number of the instance where the ray intersects an InstancedMesh (if applicable).
  */
 
+const BASE_ORIGIN = new THREE.Vector3()
+const BASE_DIRECTION = new THREE.Vector3(0, 0, -1)
 
 const BACKGROUND_COLOR = 0xd6d6d6
 const WHITE_LIGHT_COLOR = 0xffffff
@@ -32,7 +45,35 @@ const AMBIENT_LIGHT_INTENSITY = 0.6
 const DIRECTIONAL_LIGHT_INTENSITY = 0.8
 const SECONDARY_LIGHT_INTENSITY = 0.4
 
+const MIN_DISTANCE = 0.001
+
+const EVENT_PATH_SELECTION_MODE_CHANGE_KEY = 'pathselectionmodechange'
+const EVENT_PATH_SELECTION_DONE_KEY = 'pathselectiondone'
+
+const PATH_SELECTION_EVENT_LIST = [
+    EVENT_PATH_SELECTION_MODE_CHANGE_KEY,
+    EVENT_PATH_SELECTION_DONE_KEY,
+]
+const isSupportedEvent = key => PATH_SELECTION_EVENT_LIST.includes(key)
+const isNotSupportedEvent = key => !isSupportedEvent(key)
+
+/**
+ * Returns the position of an object in the scene.
+ *
+ * @param {THREE.Object3D} object - The object to get the position of.
+ * @return {THREE.Vector3|null} - The position of the object or null if the object is null or has no position.
+ */
+const pointPosition = object => {
+    if (isNil(object) || isNil(object?.position)) return null
+
+    const startPosition = new THREE.Vector3()
+    return startPosition.copy(object.position)
+}
+
 export default class ViewerComponent {
+    static EVENT_PATH_SELECTION_MODE_CHANGE_KEY = EVENT_PATH_SELECTION_MODE_CHANGE_KEY
+    static EVENT_PATH_SELECTION_DONE_KEY = EVENT_PATH_SELECTION_DONE_KEY
+
     constructor($element) {
         this.scene = null
         this.camera = null
@@ -43,13 +84,15 @@ export default class ViewerComponent {
         this.modelCenter = new THREE.Vector3()
 
         // Selection and tooltip properties
-        this.raycaster = new THREE.Raycaster()
+        this.raycaster = new THREE.Raycaster(BASE_ORIGIN, BASE_DIRECTION)
         this.mouse = new THREE.Vector2()
         this.selectedObject = null
         this.$tooltip = null
         this.hoveredObject = null
 
         this.$element = $element ?? document.body
+
+        this.initPathSelection()
     }
 
     get imageSize() {
@@ -59,6 +102,28 @@ export default class ViewerComponent {
             width: Number.isInteger(size.x),
             height: Number.isInteger(size.y),
         }
+    }
+
+    /**
+     * Returns the position of the starting point of the path.
+     * @return {THREE.Vector3|null} - The position of the starting point or null if
+     * the starting point is null or has no position.
+     */
+    get pathStartPosition() {
+        if (isNil(this.pathStart) || isNil(this.pathStart?.position)) return null
+
+        return pointPosition(this.pathStart)
+    }
+
+    /**
+     * Returns the position of the ending point of the path.
+     * @return {THREE.Vector3|null} - The position of the ending point or null if
+     * the ending point is null or has no position.
+     */
+    get pathEndPosition() {
+        if (isNil(this.pathEnd) || isNil(this.pathEnd?.position)) return null
+
+        return pointPosition(this.pathEnd)
     }
 
     /**
@@ -180,12 +245,16 @@ export default class ViewerComponent {
             this.onMouseMove(event)
         }
         $canvas.onclick = event => {
-            console.log('onclick')
             this.onMouseClick(event)
         }
 
         // Listen for window resize events.
         window.onresize = () => this.onWindowResize()
+        window.onkeydown = e => {
+            if (e.key === 'Escape' && this.isPathSelectionActive) {
+                this.deactivatePathSelection()
+            }
+        }
     }
 
     /**
@@ -211,8 +280,12 @@ export default class ViewerComponent {
 
     onMouseClick(event) {
         this.updateMousePosition(event)
-
         const intersects = this.raycasterIntersections
+
+        if (this.isPathSelectionActive) {
+            this.handlePathSelection(intersects)
+            return
+        }
 
         this.handleSelection(intersects)
     }
@@ -233,27 +306,18 @@ export default class ViewerComponent {
             return
         }
 
-        if (this.hoveredObject !== object) {
-            if (this.hoveredObject && !this.isSelected(this.hoveredObject)) {
-                this.resetMaterial(this.hoveredObject)
-            }
-            this.hoveredObject = object
-            if (!this.isSelected(object)) {
-                this.highlightObject(object, 0.4)
-            }
-        }
-        this.showTooltip(object.userData.id)
-    }
+        if (isNil(object)) return
 
-    /**
-     * Clears the hover effect and hides the tooltip.
-     */
-    clearHover() {
-        this.hideTooltip()
-        if (this.hoveredObject && !this.isSelected(this.hoveredObject)) {
+        if (this.hoveredObject && this.hoveredObject.uuid === object.uuid) return
+
+        if (this.hoveredObject && this.engageHover(this.hoveredObject)) {
             this.resetMaterial(this.hoveredObject)
         }
-        this.hoveredObject = null
+        this.hoveredObject = object
+        if (this.engageHover(object)) {
+            this.highlightObject(object, 0.4)
+        }
+        this.showTooltip(object.userData.id)
     }
 
     /**
@@ -261,26 +325,129 @@ export default class ViewerComponent {
      * @param {ThreeIntersection[]} intersects - The objects intersected by the raycaster.
      */
     handleSelection(intersects) {
-        if (intersects.length === 0) {
-            if (this.selectedObject) {
-                this.clearSelection(this.selectedObject)
-            }
+        this.clearSelection()
 
-            return
-        }
+        if (intersects.length === 0) return
 
         const object = this.findParentWithId(intersects[0].object)
         if (!object || !object.userData.id) return
 
-        if (this.selectedObject === object) {
-            this.clearSelection(object)
-        } else {
-            if (this.selectedObject) {
-                this.resetMaterial(this.selectedObject)
-            }
-            this.selectedObject = object
-            this.highlightObject(object, 0.8)
+        if (this.isSelected(object)) return
+
+        this.selectedObject = object
+        this.highlightObject(object, 0.8)
+    }
+
+    initPathSelection() {
+        this.isPathSelectionActive = false
+        this.pathStart = null
+        this.pathEnd = null
+        this.pathSelection = []
+    }
+
+    handlePathSelection(intersects) {
+        if (intersects.length === 0) return
+
+        const object = this.findParentWithId(intersects[0].object)
+        if (!object || object.userData.type !== 'point' || !object.userData.id) return
+
+        if (this.isPathStart(object)) {
+            this.deactivatePathSelection()
+            return
         }
+
+        if (isNil(this.pathStart)) {
+            this.pathStart = object
+            this.highlightObject(object, 0.4)
+            return
+        }
+
+        if (isNil(this.pathEnd)) {
+            const startPosition = this.pathStartPosition
+            const endPosition = pointPosition(object)
+            const distance = startPosition.distanceTo(endPosition)
+
+            if (distance < MIN_DISTANCE) {
+                console.warn('Ending point is too close to the starting point. ' +
+                    'Please select a distinct endpoint.')
+                return
+            }
+
+            this.pathEnd = object
+            this.highlightObject(object, 0.4)
+
+            this.onPathSelectionDone()
+
+            this.deactivatePathSelection()
+        }
+    }
+
+    activatePathSelection() {
+        this.isPathSelectionActive = true
+        this.pathStart = null
+        this.pathEnd = null
+        this.pathSelection = []
+        this.dispatchPathSelectionModeChange()
+    }
+
+    deactivatePathSelection() {
+        this.clearPathSelection()
+        this.dispatchPathSelectionModeChange()
+    }
+
+    /**
+     * Clears the selection of an object.
+     */
+    clearSelection() {
+        const object = this.selectedObject
+        if (isNil(object)) return
+
+        this.resetMaterial(object)
+        this.selectedObject = null
+    }
+
+    /**
+     * Clears the hover effect and hides the tooltip.
+     */
+    clearHover() {
+        this.hideTooltip()
+        if (this.hoveredObject && this.engageHover(this.hoveredObject)) {
+            this.resetMaterial(this.hoveredObject)
+        }
+        this.hoveredObject = null
+    }
+
+    clearPathSelection() {
+        if (this.pathStart) this.resetMaterial(this.pathStart)
+        if (this.pathEnd) this.resetMaterial(this.pathEnd)
+        this.initPathSelection()
+    }
+
+    dispatchPathSelectionModeChange() {
+        const enabled = this.isPathSelectionActive
+        this.dispatchPathSelectionEvent(EVENT_PATH_SELECTION_MODE_CHANGE_KEY, {enabled})
+    }
+
+    /**
+     * Dispatches the path selection done event with the start and end points.
+     *
+     * @param {THREE.Vector3} start - The starting point of the path.
+     * @param {THREE.Vector3} end - The ending point of the path.
+     */
+    dispatchPathSelectionDone(start, end) {
+        this.dispatchPathSelectionEvent(EVENT_PATH_SELECTION_DONE_KEY, {start, end})
+    }
+
+    dispatchPathSelectionEvent(key, detail) {
+        if (isNotSupportedEvent(key)) return
+
+        const event = new CustomEvent(key, {detail})
+        document.dispatchEvent(event)
+    }
+
+    clearSelectionAndHighlights() {
+        this.clearSelection()
+        this.clearPathSelection()
     }
 
     updateCameraRatio(w, h) {
@@ -294,20 +461,11 @@ export default class ViewerComponent {
     }
 
     render() {
-        if (!this.renderer) throw new Error('Renderer not initialized.')
-        if (!this.scene) throw new Error('Scene not initialized.')
-        if (!this.camera) throw new Error('Camera not initialized.')
+        if (isNil(this.renderer)) throw new Error('Renderer not initialized.')
+        if (isNil(this.scene)) throw new Error('Scene not initialized.')
+        if (isNil(this.camera)) throw new Error('Camera not initialized.')
 
         this.renderer.render(this.scene, this.camera)
-    }
-
-    /**
-     * Clears the selection of an object.
-     * @param {THREE.Object3D} object - The object to clear the selection of.
-     */
-    clearSelection(object) {
-        this.resetMaterial(object)
-        this.selectedObject = null
     }
 
     /**
@@ -351,7 +509,45 @@ export default class ViewerComponent {
      * @return {boolean} - True if the object is selected, false otherwise.
      */
     isSelected(object) {
-        return this.selectedObject === object
+        return object && this.selectedObject && this.selectedObject.uuid === object.uuid
+    }
+
+    isPathStart(object) {
+        return object && this.pathStart && this.pathStart.uuid === object.uuid
+    }
+
+    isPathEnd(object) {
+        return object && this.pathEnd && this.pathEnd.uuid === object.uuid
+    }
+
+    isPathSelection(object) {
+        if (isNil(object)) return false
+
+        return this.isPathStart(object) || this.isPathEnd(object)
+    }
+
+    avoidHover(object) {
+        return isNil(object) || this.isSelected(object) || this.isPathSelection(object)
+    }
+
+    isNotSelected(object) {
+        return !this.isSelected(object)
+    }
+
+    isNotPathStart(object) {
+        return !this.isPathStart(object)
+    }
+
+    isNotPathEnd(object) {
+        return !this.isPathEnd(object)
+    }
+
+    isNotPathSelection(object) {
+        return !this.isPathSelection(object)
+    }
+
+    engageHover(object) {
+        return !isNil(object) && this.isNotSelected(object) && this.isNotPathSelection(object)
     }
 
     /**
@@ -579,5 +775,15 @@ export default class ViewerComponent {
 
     hideTooltip() {
         this.$tooltip.style.display = 'none'
+    }
+
+    /**
+     * Handles the path selection process.
+     */
+    onPathSelectionDone() {
+        const start = this.pathStartPosition
+        const end = this.pathEndPosition
+
+        this.dispatchPathSelectionDone(start, end)
     }
 }

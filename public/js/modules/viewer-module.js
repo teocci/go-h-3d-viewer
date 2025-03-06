@@ -8,6 +8,15 @@ import ViewerComponent from '../components/viewer-component.js'
 import TOCComponent from '../components/toc-component.js'
 import Restapi from '../restapi.js'
 
+const FIT_KEY = ToolbarComponent.FIT_KEY
+const UP_Y_KEY = ToolbarComponent.UP_Y_KEY
+const UP_Z_KEY = ToolbarComponent.UP_Z_KEY
+const PATH_KEY = ToolbarComponent.PATH_KEY
+const SNAPSHOTS_KEY = ToolbarComponent.SNAPSHOTS_KEY
+
+const EVENT_PATH_SELECTION_MODE_CHANGE = ViewerComponent.EVENT_PATH_SELECTION_MODE_CHANGE_KEY
+const EVENT_PATH_SELECTION_DONE = ViewerComponent.EVENT_PATH_SELECTION_DONE_KEY
+
 export default class ViewerModule extends BaseComponent {
     static TAG = 'viewer'
 
@@ -75,6 +84,20 @@ export default class ViewerModule extends BaseComponent {
     }
 
     initViewerModuleListeners() {
+        document.addEventListener(EVENT_PATH_SELECTION_MODE_CHANGE, e => {
+            const {enabled} = e.detail
+
+            console.log('event', {e})
+
+            this.toolbar.toggleItem(PATH_KEY, enabled)
+        })
+
+        document.addEventListener(EVENT_PATH_SELECTION_DONE, e => {
+            const {start, end} = e.detail
+
+            console.log('event', {start, end})
+        })
+
         this.toc.onClickHandler = ($element, uuid) => {
             if (this.toc.hasUUID(uuid)) {
                 this.toc.removeUUID(uuid)
@@ -90,16 +113,19 @@ export default class ViewerModule extends BaseComponent {
 
         this.toolbar.onItemClick = (e, key) => {
             switch (key) {
-                case 'fit':
+                case FIT_KEY:
                     this.viewer.fitModel()
                     break
-                case 'up-y':
+                case UP_Y_KEY:
                     this.viewer.upY()
                     break
-                case 'up-z':
+                case UP_Z_KEY:
                     this.viewer.upZ()
                     break
-                case 'snapshot':
+                case PATH_KEY:
+                    this.startPathSelection()
+                    break
+                case SNAPSHOTS_KEY:
                     const snapshot = this.viewer.renderImageAsDataUrl()
                     this.downloadDataUrl(snapshot)
                     break
@@ -116,15 +142,21 @@ export default class ViewerModule extends BaseComponent {
      */
     downloadDataUrl(dataUrl, filename = `image-${hashID()}`) {
         // Create a link element
-        const link = document.createElement('a');
+        const link = document.createElement('a')
 
         // Set link properties
-        link.href = dataUrl;
-        link.download = `${filename}.png`;
+        link.href = dataUrl
+        link.download = `${filename}.png`
 
         // Add link to body, click it, and remove it
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+    }
+
+    startPathSelection() {
+        this.viewer.clearSelectionAndHighlights()
+        this.toolbar.activateItem(PATH_KEY)
+        this.viewer.activatePathSelection()
     }
 }
