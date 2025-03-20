@@ -608,3 +608,4 @@ bundles/
 .env
 config.json
 users.json
+!web/vendors/three/bin/

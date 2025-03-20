@@ -13,7 +13,7 @@ import (
 	"github.com/teocci/go-hynix-3d-viewer/src/webserver/renders"
 )
 
-const dummyCollectionsDataPath = "./public/json/updated-collections.json"
+const dummyCollectionsDataPath = "./web/json/updated-collections.json"
 
 type GISCollection struct {
 	Name string   `json:"name"`
@@ -40,7 +40,7 @@ func CollectionList(c *fiber.Ctx) error {
 }
 
 func Collections(c *fiber.Ctx) error {
-	uuids, err := parsers.CollectionUUIDs(c)
+	uuids, err := parsers.QueryCollectionUUIDs(c)
 	if err != nil {
 		return renders.JSONBadRequest(c, err)
 	}

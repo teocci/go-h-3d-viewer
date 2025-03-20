@@ -11,7 +11,7 @@ import (
 
 func registerPages(app *fiber.App) {
 	// Serve static files (CSS, JS, images, etc.)
-	app.Static("/", "./public")
+	app.Static("/", "./web")
 
 	page := app.Group("/page")
 	page.Get("/:page", pages.HandlePages)

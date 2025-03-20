@@ -16,5 +16,7 @@ func registerAPIEndpoints(app *fiber.App) fiber.Router {
 	api.Get("/collections", endpoints.Collections)
 	api.Get("/collection", endpoints.Collection)
 
+	api.Get("/network/:uuid/:kind", endpoints.NetworkHandler)
+
 	return api
 }

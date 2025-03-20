@@ -7,7 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func CollectionUUIDs(c *fiber.Ctx) ([]string, error) {
+func QueryCollectionUUIDs(c *fiber.Ctx) ([]string, error) {
 	uuids := c.Query("collections")
 	if uuids == "" {
 		return nil, ErrCollectionsRequired

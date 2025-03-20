@@ -8,4 +8,5 @@ import "errors"
 var (
 	ErrCollectionsRequired = errors.New("collections UUIDs are required")
 	ErrProviderRequired    = errors.New("provider UUID is required")
+	ErrNetworkRequired     = errors.New("network UUID is required")
 )

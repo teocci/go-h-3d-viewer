@@ -12,6 +12,7 @@ import (
 
 	"github.com/teocci/go-hynix-3d-viewer/src/config"
 	"github.com/teocci/go-hynix-3d-viewer/src/db"
+	"github.com/teocci/go-hynix-3d-viewer/src/gisapi"
 	"github.com/teocci/go-hynix-3d-viewer/src/webserver"
 )
 
@@ -20,11 +21,14 @@ func Start() error {
 	fmt.Println("PID:", pid)
 
 	cfg := config.Get()
+	profile := config.ActiveProfile()
 
 	dbInstance := db.GetDB()
 	if dbInstance == nil {
 		log.Fatal("Failed to initialize the database.")
 	}
+	
+	gisapi.InitVars(profile)
 
 	go webserver.Start(cfg)
 
