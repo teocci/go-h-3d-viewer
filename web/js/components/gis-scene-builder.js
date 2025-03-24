@@ -28,9 +28,15 @@
 import * as THREE from 'three'
 import LinkChainCaller from '../workers/link-chain-caller.js'
 import {asVector3, scaleGeometry, serializeVector} from '../three/three-utils.js'
+import LinkChainRunner from '../workers/link-chain-runner.js'
 
 const CHUNK_SIZE = 10000
 const LOD_THRESHOLD = 50
+const lodSettings = n => {
+    return n < 6 ? {tubularSegments: Math.max(n * 5, 8), radialSegments: 4} :
+        n < 16 ? {tubularSegments: Math.max(n * 3, 12), radialSegments: 5} :
+            {tubularSegments: Math.max(n * 2, 18), radialSegments: 3}
+}
 
 export default class GISSceneBuilder {
     constructor(scene) {
@@ -142,8 +148,8 @@ export default class GISSceneBuilder {
             stats,
         }
 
-        this.addNodes(nodes, networkData)
-        // this.addLinksUsingWorker(links, networkData)
+        // this.addNodeAsSphere(nodes, networkData)
+        this.addLinksAsChains(links, networkData)
 
         console.log({stats: networkData.stats})
 
@@ -294,10 +300,90 @@ export default class GISSceneBuilder {
 
                 if (!found) break
             }
+
             chains.push(chain)
         }
 
         return chains
+    }
+
+    /**
+     * Updates statistical values for nodes and links.
+     * @param {Object} stats - The statistics object to update.
+     * @param {number} x - X value to update.
+     * @param {number} y - Y value to update.
+     * @param {number} z - Z value to update.
+     */
+    updateStats(stats, x, y, z) {
+        const size = stats.total + 1
+        stats.avg.x = ((stats.avg.x || 0) * (size - 1) + x) / size
+        stats.avg.y = ((stats.avg.y || 0) * (size - 1) + y) / size
+        stats.avg.z = ((stats.avg.z || 0) * (size - 1) + z) / size
+
+        stats.min.x = Math.min(stats.min.x ?? Number.MAX_VALUE, x)
+        stats.min.y = Math.min(stats.min.y ?? Number.MAX_VALUE, y)
+        stats.min.z = Math.min(stats.min.z ?? Number.MAX_VALUE, z)
+
+        stats.max.x = Math.max(stats.max.x ?? Number.MIN_VALUE, x)
+        stats.max.y = Math.max(stats.max.y ?? Number.MIN_VALUE, y)
+        stats.max.z = Math.max(stats.max.z ?? Number.MIN_VALUE, z)
+    }
+
+    /**
+     * Adds nodes to the network.
+     * Many nodes may share the same coordinates (but have different IDs and guids),
+     * so we deduplicate nodes by their position.
+     * @param {NodeGeometryData[]} nodes - The list of nodes to add to the network
+     * @param {NetworkGeometryData} network - The network data to add the nodes to
+     */
+    addNodeAsSphere(nodes, network) {
+        const geometry = this.geometries.point
+        const material = this.materials.default.point
+
+        const stats = network.stats.nodes
+        const meshGroup = network.meshGroups.nodes
+        const nodeMap = network.nodeMap
+
+        for (const node of nodes) {
+            const {x, y, z} = scaleGeometry(node.geometry)
+            const key = `${x},${y},${z}`
+
+            let sphere = network.nodeMap.get(key)
+            if (isNil(sphere)) {
+                sphere = new THREE.Mesh(geometry, material)
+                sphere.position.set(x, y, z)
+                sphere.userData = {
+                    ouid: randomUUID(),
+                    ids: [],
+                    guids: [],
+                    type: 'point',
+                    materialMode: 'default',
+                }
+
+                this.updateStats(stats, x, y, z)
+
+                network.meshGroups.nodes.add(sphere)
+                network.nodeMap.set(key, sphere)
+
+                stats.unique++
+            }
+
+            sphere.userData.ids.push(node.id)
+            sphere.userData.guids.push(node.guid)
+            sphere.userData.label = `Node ${sphere.userData.ids.join(',')}`
+
+            if (stats.total++ > 99999) break
+        }
+    }
+
+    addLinksAsChains(links, network, lineWidth = 0.05) {
+        const material = this.materials.default.line
+        const stats = network.stats.links
+
+        const processor = new LinkChainRunner(links)
+        const chains = processor.process()
+
+        this.createTubesFromChains(chains, network, lineWidth, material, stats)
     }
 
     /**
@@ -317,20 +403,21 @@ export default class GISSceneBuilder {
 
             caller.chainLinks(links, chains => {
                 this.createTubesFromChains(chains, network, lineWidth, material, stats)
+                this.onTubesBuilt(network)
 
-                console.log({stats: network.stats})
-
-                console.log({
-                    networkNodes: network.meshGroups.nodes.children.length,
-                    networkLinks: network.meshGroups.links.children.length,
-                })
-
-                Object.values(network.meshGroups).forEach(g => {
-                    network.group.add(g)
-                })
-
-                this.scene.add(network.group)
-                this.networks.set(network.uuid, network)
+                // console.log({stats: network.stats})
+                //
+                // console.log({
+                //     networkNodes: network.meshGroups.nodes.children.length,
+                //     networkLinks: network.meshGroups.links.children.length,
+                // })
+                //
+                // Object.values(network.meshGroups).forEach(g => {
+                //     network.group.add(g)
+                // })
+                //
+                // this.scene.add(network.group)
+                // this.networks.set(network.uuid, network)
             })
 
         } catch (err) {
@@ -339,7 +426,25 @@ export default class GISSceneBuilder {
         }
     }
 
-    addLinksUsingChains(links, network, lineWidth = 0.05) {
+    onSphereBuilt(network) {
+        console.log('Spheres built:', network.stats.nodes)
+        console.log({
+            networkNodes: network.meshGroups.nodes.children.length,
+        })
+
+        network.group.add(network.meshGroups.nodes)
+    }
+
+    onTubesBuilt(network) {
+        console.log('Tubes built:', network.stats.links)
+        console.log({
+            networkLinks: network.meshGroups.links.children.length,
+        })
+
+        network.group.add(network.meshGroups.links)
+    }
+
+    addLinksUsingChunks(links, network, lineWidth = 0.05) {
         const material = this.materials.default.line
         const stats = network.stats.links
 
@@ -371,10 +476,20 @@ export default class GISSceneBuilder {
     /**
      * Creates tube geometries from chains of link data
      * @private
+     * @param {LinkPreprocessedData[][]} chains - The list of chains to create tubes from (each chain is a list of links)
+     * @param {NetworkGeometryData} network - The network data to add the tubes to
+     * @param {number} lineWidth - The width of the line
+     * @param {THREE.Material} material - The material to use for the tubes
+     * @param {Object} stats - The statistics object to update with the tube data
+     * @returns {void}
      */
     createTubesFromChains(chains, network, lineWidth, material, stats) {
         if (isNilArray(chains)) return console.warn('No chains found')
 
+        const singles = []
+        const others = []
+
+        let count = 0
         for (const chain of chains) {
             if (chain.length === 0) continue
 
@@ -383,60 +498,55 @@ export default class GISSceneBuilder {
             const endIds = []
             const sequences = []
 
-            // Use pre-allocated arrays and minimize object creation in the loop
             points.push(asVector3(chain[0].start))
 
-            // Pre-calculate chain length once
             const size = chain.length
             for (let i = 0; i < size; i++) {
                 const item = chain[i]
+
+                if (item.sKey === item.eKey) continue
+
                 points.push(asVector3(item.end))
                 startIds.push(item.link.startNodeId)
                 endIds.push(item.link.endNodeId)
                 sequences.push(item.link.sequenceNo)
 
-                // Calculate stats with fewer object creations
                 const dx = Math.abs(item.end.x - item.start.x)
                 const dy = Math.abs(item.end.y - item.start.y)
                 const dz = Math.abs(item.end.z - item.start.z)
 
-                const size = stats.total + 1
-
-                // Update averages directly to avoid object creation
-                stats.avg.x = ((stats.avg.x || 0) * stats.total + dx) / size
-                stats.avg.y = ((stats.avg.y || 0) * stats.total + dy) / size
-                stats.avg.z = ((stats.avg.z || 0) * stats.total + dz) / size
-
-                // Update min/max
-                stats.min.x = Math.min(stats.min.x || Number.MAX_VALUE, dx)
-                stats.min.y = Math.min(stats.min.y || Number.MAX_VALUE, dy)
-                stats.min.z = Math.min(stats.min.z || Number.MAX_VALUE, dz)
-
-                stats.max.x = Math.max(stats.max.x || Number.MIN_VALUE, dx)
-                stats.max.y = Math.max(stats.max.y || Number.MIN_VALUE, dy)
-                stats.max.z = Math.max(stats.max.z || Number.MIN_VALUE, dz)
+                this.updateStats(stats, dx, dy, dz)
 
                 stats.total++
             }
 
-            // Apply level of detail based on chain length
-            const tubularSegments = points.length <= LOD_THRESHOLD
-                ? Math.max(points.length * 10, 20)
-                : Math.max(points.length * 3, 20)
+            const length = points.length
+            if (length < 3) {
+                if (length === 2) others.push([...points])
+                if (length === 1) singles.push(points[0])
+                continue
+            }
+
+            const {tubularSegments, radialSegments} = lodSettings(length)
 
             const radius = lineWidth
-            const radialSegments = points.length <= LOD_THRESHOLD ? 8 : 6
             const closed = false
 
-            // Create the geometry
-            const curve = new THREE.CatmullRomCurve3(points, false)
+            const curve = new THREE.CatmullRomCurve3(points, closed)
             const geometry = new THREE.TubeGeometry(
-                curve, tubularSegments, radius, radialSegments, closed,
+                curve,
+                tubularSegments,
+                radius,
+                radialSegments,
+                closed,
             )
+
+            if (count++ < 5) console.log({chain, points})
+            if (count > 49910 && count < 49913) console.log({chain, points, count})
 
             const mesh = new THREE.Mesh(geometry, material)
             mesh.userData.ouid = randomUUID()
-            mesh.userData.label = `Chain ${startIds.join(',')}`
+            mesh.userData.label = `Chain[${length}] ${count}`
             mesh.userData.type = 'line'
             mesh.userData.materialMode = 'default'
             mesh.userData.startIds = startIds
@@ -445,6 +555,103 @@ export default class GISSceneBuilder {
 
             network.meshGroups.links.add(mesh)
         }
+
+        if (others.length > 0) {
+            const mesh = this.buildInstanceOfSegments(others, lineWidth, material)
+            network.meshGroups.links.add(mesh)
+        }
+
+        // if (singles.length > 0) {
+        //     const mesh = this.buildInstanceOfPoints(singles, lineWidth, material)
+        //     network.meshGroups.links.add(mesh)
+        // }
+    }
+
+    buildInstanceOfPoints(points) {
+        const geometry = this.geometries.point
+        const material = this.materials.default.point
+        const mesh = new THREE.InstancedMesh(
+            geometry,
+            material,
+            points.length,
+        )
+        const matrix = new THREE.Matrix4()
+
+        for (let i = 0; i < points.length; i++) {
+            const point = points[i]
+            matrix.setPosition(point.x, point.y, point.z)
+            mesh.setMatrixAt(i, matrix)
+        }
+
+        mesh.instanceMatrix.needsUpdate = true
+        mesh.userData = {
+            ouid: randomUUID(),
+            type: 'point',
+            materialMode: 'default',
+        }
+
+        return mesh
+    }
+
+    buildInstanceOfSegments(pairs, lineWidth, material) {
+        const geometry = new THREE.CylinderGeometry(
+            lineWidth,
+            lineWidth,
+            1,
+            8,
+            1,
+        )
+
+        // Move pivot point to bottom of cylinder
+        geometry.translate(0, 0.5, 0)
+
+        // Create instanced mesh
+        const mesh = new THREE.InstancedMesh(
+            geometry,
+            material,
+            pairs.length,
+        )
+
+        // Temporary variables
+        const matrix = new THREE.Matrix4()
+        const position = new THREE.Vector3()
+        const target = new THREE.Vector3()
+        const direction = new THREE.Vector3()
+
+        for (let i = 0; i < pairs.length; i++) {
+            const pair = pairs[i]
+
+            position.copy(pair[0])
+            target.copy(pair[1])
+
+            // Calculate direction and length
+            direction.subVectors(target, position)
+            const length = direction.length()
+
+            // Normalize direction
+            direction.normalize()
+
+            // Calculate quaternion to rotate from (0,1,0) to direction
+            const quaternion = new THREE.Quaternion()
+            const upVector = new THREE.Vector3(0, 1, 0)
+            quaternion.setFromUnitVectors(upVector, direction)
+
+            // Create matrix
+            matrix.makeRotationFromQuaternion(quaternion)
+            matrix.scale(new THREE.Vector3(1, length, 1))
+            matrix.setPosition(position)
+
+            mesh.setMatrixAt(i, matrix)
+        }
+
+        mesh.instanceMatrix.needsUpdate = true
+
+        mesh.userData.ouid = randomUUID()
+        mesh.userData.label = `Connections[${pairs.length}]`
+        mesh.userData.type = 'line'
+        mesh.userData.materialMode = 'default'
+
+        return mesh
     }
 
     /**
@@ -569,7 +776,7 @@ export default class GISSceneBuilder {
                 network.meshGroups.links.add(tube)
             }
 
-            if (stats.total++ > 99999) break
+            // if (stats.total++ > 99999) break
         }
     }
 

@@ -40,8 +40,8 @@ const BASE_DIRECTION = new THREE.Vector3(0, 0, -1)
 
 const CAMERA_FOV = 75
 const CAMERA_ASPECT = window.innerWidth / window.innerHeight
-const CAMERA_NEAR = 0.001
-const CAMERA_FAR = 10000
+const CAMERA_NEAR = 0.0001
+const CAMERA_FAR = 1000
 
 const BACKGROUND_COLOR = 0xd6d6d6
 const WHITE_LIGHT_COLOR = 0xffffff
@@ -364,6 +364,11 @@ export default class ViewerComponent {
             if (e.key === 'Escape' && this.isPathSelectionActive) {
                 this.deactivatePathSelection()
             }
+        }
+
+        this.gisBuilder.onDataLoaded = e => {
+            this.updateModelCenterSize()
+            this.centerCameraOnModel()
         }
     }
 
@@ -844,8 +849,6 @@ export default class ViewerComponent {
      */
     loadNetwork(data) {
         this.gisBuilder.buildNetwork(data)
-        this.updateModelCenterSize()
-        this.centerCameraOnModel()
     }
 
     /**

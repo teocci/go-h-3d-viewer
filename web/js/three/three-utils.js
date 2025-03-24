@@ -22,6 +22,6 @@ const asVector3 = g => new THREE.Vector3(g.x, g.y, g.z)
  * @param {number} [p = 3] - The number of decimal places to include.
  * @return {string} The serialized vector.
  */
-const serializeVector = (v, p = 3) => `${v.x.toFixed(p)},${v.y.toFixed(p)},${v.z.toFixed(p)}`
+const serializeVector = (v, p = 4) => `${v.x.toFixed(p)},${v.y.toFixed(p)},${v.z.toFixed(p)}`
 
 export {scaleGeometry, asVector3, serializeVector}

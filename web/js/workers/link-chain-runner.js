@@ -198,7 +198,7 @@ export default class LinkChainRunner {
      * @return {LinkPreprocessedData[]} - The normalized chain.
      */
     normalizeChain(chain, forcedEP) {
-        if (chain.length < 2) return chain
+        if (chain.length === 0) return chain
 
         const normalized = []
         let firstLink = chain[0]
@@ -248,19 +248,19 @@ export default class LinkChainRunner {
 
         const size = this.links.length
 
-        // for (const [k, indexes] of this.nodeToLinks.entries()) {
-        //     if (this.isNotEndpoint(k)) continue
-        //
-        //     for (const i of indexes) {
-        //         if (this.isNotUsed(i)) continue
-        //
-        //         const chain = this.buildChainFromEndpoint(k, i)
-        //         if (chain.length < 1) continue
-        //
-        //         const normalized = this.normalizeChain(chain, k)
-        //         this.chains.push(normalized)
-        //     }
-        // }
+        for (const [k, indexes] of this.nodeToLinks.entries()) {
+            if (this.isNotEndpoint(k)) continue
+
+            for (const i of indexes) {
+                if (this.isNotUsed(i)) continue
+
+                const chain = this.buildChainFromEndpoint(k, i)
+                if (chain.length < 1) continue
+
+                const normalized = this.normalizeChain(chain, k)
+                this.chains.push(normalized)
+            }
+        }
 
         for (let i = 0; i < size; i++) {
             if (this.isUsed(i)) continue
@@ -271,7 +271,7 @@ export default class LinkChainRunner {
             const normalized = this.normalizeChain(chain)
             this.chains.push(normalized)
 
-            if (this.chains.length >= 100) break
+            // if (this.chains.length >= 50000) break
         }
 
         return this.chains
@@ -290,10 +290,10 @@ export default class LinkChainRunner {
         for (let i = 0; i < size; i++) {
             if (this.used[i]) continue
 
-            const { startKey, endKey } = this.linkData[i]
-            let chain = (!this.isEndpoint(startKey) && this.isEndpoint(endKey))
-                ? this.mergeChain(i, endKey, startKey)
-                : this.mergeChain(i, startKey, endKey)
+            const { sKey, eKey } = this.linkData[i]
+            let chain = (!this.isEndpoint(sKey) && this.isEndpoint(eKey))
+                ? this.mergeChain(i, eKey, sKey)
+                : this.mergeChain(i, sKey, eKey)
 
             // Normalize the chain ordering and orientation.
             chain = this.normalizeChainSimple(chain)
@@ -311,69 +311,56 @@ export default class LinkChainRunner {
      * @param {LinkPreprocessedData[]} chain - The unnormalized chain.
      * @return {LinkPreprocessedData[]} The normalized chain.
      */
-    normalizeChain(chain) {
-        if (!chain.length) return chain
+    normalizeChainSimple(chain) {
+        const size = chain.length
+        if (!size) return chain
 
         // Build a frequency map for each node in the chain using a plain object.
-        const nodeFrequency = {}
-        for (let i = 0, len = chain.length; i < len; i++) {
+        const freq = {}
+        for (let i = 0, len = size; i < len; i++) {
             const link = chain[i]
-            nodeFrequency[link.startKey] = (nodeFrequency[link.startKey] || 0) + 1
-            nodeFrequency[link.endKey] = (nodeFrequency[link.endKey] || 0) + 1
+            freq[link.sKey] = (freq[link.sKey] || 0) + 1
+            freq[link.eKey] = (freq[link.eKey] || 0) + 1
         }
 
         // Identify endpoints: nodes that appear only once.
         const endpoints = []
-        for (const key in nodeFrequency) {
-            if (nodeFrequency[key] === 1) {
-                endpoints.push(key)
-            }
+        for (const key in freq) {
+            if (freq[key] === 1) endpoints.push(key)
         }
 
-        let startNode
+        let startKey
         if (endpoints.length > 0) {
             // For an open chain, choose one endpoint as the starting node.
             // If the first link already has one of these endpoints, use that.
-            if (chain[0].startKey === endpoints[0] || chain[0].endKey !== endpoints[0]) {
-                startNode = endpoints[0]
+            if (chain[0].sKey === endpoints[0] || chain[0].eKey !== endpoints[0]) {
+                startKey = endpoints[0]
             } else {
-                startNode = endpoints[1]
+                startKey = endpoints[1]
             }
         } else {
             // For a closed chain, use the start of the first link.
-            startNode = chain[0].startKey
+            startKey = chain[0].sKey
         }
 
-        const normalizedChain = []
-        // Reorient the first link if needed.
+        const normalized = []
         let firstLink = chain[0]
-        if (firstLink.startKey !== startNode && firstLink.endKey === startNode) {
-            firstLink = {
-                ...firstLink,
-                startKey: firstLink.endKey,
-                endKey: firstLink.startKey,
-                start: firstLink.end,
-                end: firstLink.start,
-            }
+        if (firstLink.sKey !== startKey && firstLink.eKey === startKey) {
+            firstLink = this.flipLink(firstLink)
         }
-        normalizedChain.push(firstLink)
+        normalized.push(firstLink)
 
         // For each subsequent link, flip its orientation if needed so that its start matches the previous link's end.
-        for (let i = 1, len = chain.length; i < len; i++) {
+        for (let i = 1, len = size; i < len; i++) {
             let current = chain[i]
-            const prev = normalizedChain[i - 1]
-            if (current.startKey !== prev.endKey && current.endKey === prev.endKey) {
-                current = {
-                    ...current,
-                    startKey: current.endKey,
-                    endKey: current.startKey,
-                    start: current.end,
-                    end: current.start,
-                }
+            const prev = normalized[i - 1]
+            if (current.sKey !== prev.eKey && current.eKey === prev.eKey) {
+                current = this.flipLink(current)
             }
-            normalizedChain.push(current)
+            normalized.push(current)
         }
-        return normalizedChain
+
+        return normalized
     }
 
     /**
