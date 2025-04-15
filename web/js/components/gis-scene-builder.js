@@ -25,10 +25,17 @@
  * @property {Object} stats.links - Statistics for the links.
  */
 
-import * as THREE from 'three'
-import LinkChainCaller from '../workers/link-chain-caller.js'
-import {asVector3, scaleGeometry, serializeVector} from '../three/three-utils.js'
-import LinkChainRunner from '../workers/link-chain-runner.js'
+import * as THREE
+    from 'three'
+import LinkChainCaller
+    from '../workers/link-chain-caller.js'
+import {
+    asVector3,
+    scaleGeometry,
+    serializeVector,
+} from '../three/three-utils.js'
+import LinkChainRunner
+    from '../workers/link-chain-runner.js'
 
 const CHUNK_SIZE = 10000
 const LOD_THRESHOLD = 50
@@ -115,7 +122,7 @@ export default class GISSceneBuilder {
 
         // Reusable geometries
         this.geometries = {
-            point: new THREE.SphereGeometry(0.25, 16, 16),
+            point: new THREE.SphereGeometry(0.2, 16, 16),
             polylineNode: new THREE.SphereGeometry(0.4, 16, 16),
         }
     }
@@ -486,7 +493,7 @@ export default class GISSceneBuilder {
     createTubesFromChains(chains, network, lineWidth, material, stats) {
         if (isNilArray(chains)) return console.warn('No chains found')
 
-        const singles = []
+        // const singles = []
         const others = []
 
         let count = 0
@@ -523,7 +530,7 @@ export default class GISSceneBuilder {
             const length = points.length
             if (length < 3) {
                 if (length === 2) others.push([...points])
-                if (length === 1) singles.push(points[0])
+                // if (length === 1) singles.push(points[0])
                 continue
             }
 

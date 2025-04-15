@@ -143,6 +143,7 @@ export default class LinkChainRunner {
             key = nextNode
             index = nextLinkIndex
         }
+
         return chain
     }
 
@@ -277,7 +278,6 @@ export default class LinkChainRunner {
         return this.chains
     }
 
-
     /**
      * Process the links and return the chains.
      * The resulting chains are normalized so that the links are
@@ -290,7 +290,7 @@ export default class LinkChainRunner {
         for (let i = 0; i < size; i++) {
             if (this.used[i]) continue
 
-            const { sKey, eKey } = this.linkData[i]
+            const {sKey, eKey} = this.linkData[i]
             let chain = (!this.isEndpoint(sKey) && this.isEndpoint(eKey))
                 ? this.mergeChain(i, eKey, sKey)
                 : this.mergeChain(i, sKey, eKey)

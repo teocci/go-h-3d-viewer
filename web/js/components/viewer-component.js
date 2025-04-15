@@ -423,12 +423,10 @@ export default class ViewerComponent {
         }
 
         const object = this.findParentWithOUID(intersects[0].object)
-        if (!object) {
+        if (isNil(object)) {
             this.clearHover()
             return
         }
-
-        if (isNil(object)) return
 
         if (this.hoveredObject && this.hoveredObject.uuid === object.uuid) return
 
@@ -447,15 +445,17 @@ export default class ViewerComponent {
      * @param {ThreeIntersection[]} intersects - The objects intersected by the raycaster.
      */
     handleSelection(intersects) {
-        this.clearSelection()
-
         if (intersects.length === 0) return
 
         const object = this.findParentWithOUID(intersects[0].object)
         if (!object || !object.userData.ouid) return
 
-        if (this.isSelected(object)) return
+        if (this.isSelected(object)) {
+            this.clearSelection()
+            return
+        }
 
+        this.clearSelection()
         this.selectedObject = object
         this.highlightObject(object, 0.8)
     }
